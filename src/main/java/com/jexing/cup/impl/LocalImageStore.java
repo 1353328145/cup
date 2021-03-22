@@ -1,13 +1,11 @@
 package com.jexing.cup.impl;
 
 import com.jexing.cup.ImageStore;
-import com.jexing.cup.bean.ImageObj;
 import com.jexing.cup.exception.FileTypeNotSupportedException;
 import com.jexing.cup.exception.NeedAbsolutePathException;
 import com.jexing.cup.util.IOUtil;
 import com.jexing.cup.util.Tool;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.HashMap;
@@ -20,7 +18,7 @@ public class LocalImageStore implements ImageStore {
     public LocalImageStore(String localRepository) throws NeedAbsolutePathException {
         this(localRepository,4);
     }
-    //level = 4 , 8 , 16
+    //level = 4 , 8 , 16 否则都为 4
     public LocalImageStore(String localRepository,int level) throws NeedAbsolutePathException {
         if (level != 4 && level!= 8 && level!=16){
             level = 4;
@@ -37,16 +35,8 @@ public class LocalImageStore implements ImageStore {
             throw new FileTypeNotSupportedException();
         }
         String key = UUID.randomUUID().toString().replace("-","");
-        String hashCode = Tool.hash(key,level);
-        String path = createDirectory(hashCode, key+map.get(contentType));
-        System.out.println(path);
-        try {
-            IOUtil.save(path,stream);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return key+"@"+contentType;
+        String path = createDirectory(Tool.hash(key,level), key+map.get(contentType));
+        return IOUtil.save(path,stream)?key+"@"+contentType:null;
     }
 
     /**
@@ -64,6 +54,21 @@ public class LocalImageStore implements ImageStore {
         return path.toString();
     }
 
+    /**
+     * 遇上方法类似但不创建文件夹
+     * @param hashCode
+     * @param fileName
+     * @return
+     */
+    private String handle(String hashCode,String fileName){
+        StringBuffer path = new StringBuffer(localRepository);
+        for (int i = 0; i < hashCode.length(); i++) {
+            path.append(File.separator).append(hashCode.charAt(i));
+        }
+        path.append(File.separator).append(fileName);
+        return path.toString();
+    }
+
     private void checkAndBuild() throws NeedAbsolutePathException {
         File file = new File(localRepository);
         if (!file.isAbsolute()){
@@ -75,7 +80,7 @@ public class LocalImageStore implements ImageStore {
     @Override
     public String getObjForBase64(String key) {
         byte[] bytes = getObj(key);
-        if (bytes==null || bytes.length==0){
+        if (bytes==null){
             return null;
         }
         String type = key.split("@")[1];
@@ -85,29 +90,15 @@ public class LocalImageStore implements ImageStore {
     }
 
     @Override
-    public ImageObj getObjForByte(String key) {
-        byte[] bytes = getObj(key);
-        if (bytes==null || bytes.length == 0){
-            return null;
-        }
-        ImageObj obj = new ImageObj();
-        obj.setData(bytes);
-        obj.setContentType(key.split("@")[1]);
-        return obj;
+    public byte[] getObjForByte(String key) {
+        return getObj(key);
     }
     private byte[] getObj(String key){
         String path = getPath(key);
         if (path==null){
             return null;
         }
-        byte[] bytes;
-        try {
-            bytes = IOUtil.read(path);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return bytes;
+        return IOUtil.read(path);
     }
     @Override
     public boolean contain(String key) {
@@ -118,12 +109,31 @@ public class LocalImageStore implements ImageStore {
         return false;
     }
 
+    @Override
+    public boolean delete(String key) {
+        String path = getPath(key);
+        if (path == null){
+            return false;
+        }
+        return new File(path).delete();
+    }
+
+    /**
+     * 测试key的正确性
+     */
+    private boolean testKey(String[] split){
+        return split.length==2 && map.containsKey(split[1]) && split[0].length()==32;
+    }
+    /**
+     * 获取绝对路径
+     * @param key
+     */
     private String getPath(String key){
         String[] split = key.split("@");
-        if (split.length!=2 || !map.containsKey(split[1])){
+        if (!testKey(split)){
             return null;
         }
         String hash = Tool.hash(split[0],level);
-        return createDirectory(hash, split[0] + map.get(split[1]));
+        return handle(hash, split[0] + map.get(split[1]));
     }
 }
