@@ -6,4 +6,4 @@
 
 - 实现类LocalImageStore需要一个本地的绝对路径
 
-- 存入图片获得key，通过key进行增删查
+- 存入图片获得key，通过key进行删查
