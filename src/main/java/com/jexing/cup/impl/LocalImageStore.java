@@ -55,7 +55,7 @@ public class LocalImageStore implements ImageStore {
     }
 
     /**
-     * 遇上方法类似但不创建文件夹
+     * 与上方法类似但不创建文件夹
      * @param hashCode
      * @param fileName
      * @return
@@ -71,12 +71,29 @@ public class LocalImageStore implements ImageStore {
 
     private void checkAndBuild() throws NeedAbsolutePathException {
         File file = new File(localRepository);
-        if (!file.isAbsolute()){
+        if (!file.isAbsolute() && !testUnix()){
             throw new NeedAbsolutePathException();
         }
         file.mkdirs();
     }
 
+    private boolean testUnix(){
+        int current = 0;
+        char[] chars = localRepository.toCharArray();
+        if (chars.length==0 || chars[0] != '/'){return false;}
+        for (int i = 1; i < chars.length; i++) {
+            if (chars[i]=='/'){
+                if (current==0 || current>=255){
+                    return false;
+                }else{
+                    current=0;
+                }
+            }else{
+                current++;
+            }
+        }
+        return true;
+    }
     @Override
     public String getObjForBase64(String key) {
         byte[] bytes = getObj(key);

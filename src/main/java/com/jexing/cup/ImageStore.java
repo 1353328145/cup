@@ -1,7 +1,6 @@
 package com.jexing.cup;
 
 import com.jexing.cup.exception.FileTypeNotSupportedException;
-
 import java.io.InputStream;
 
 public interface ImageStore {

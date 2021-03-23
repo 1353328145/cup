@@ -17,12 +17,6 @@ public class Tool {
         return new String(answer);
     }
 
-    /**
-     *     PNG(".png", "image/png"),
-     *     JPG(".jpg", "image/jpeg"),
-     *     GIF(".gif", "image/gif"),
-     *     ICO(".ico", "image/x-icon"),
-     */
     public static HashMap<String,String> getTypeMap(){
         HashMap<String,String> map= new HashMap<>();
         map.put("image/png",".png");
